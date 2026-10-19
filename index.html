@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مساحتي</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f7; margin: 0; padding: 20px 20px 90px; color: #222; }
+    .box { max-width: 700px; margin: 0 auto; }
+    input, select, button, textarea { font-size: 16px; padding: 8px; margin: 4px; }
+    textarea { width: 95%; min-height: 60px; font-family: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+    .task { display: flex; align-items: center; gap: 8px; padding: 10px; margin: 6px 0;
+            border-radius: 8px; border-right: 6px solid #ccc; background: #fff; flex-wrap: wrap; }
+    .task .info { flex: 1; min-width: 150px; }
+    .meta { font-size: 13px; color: #666; }
+    .notes { font-size: 14px; color: #444; white-space: pre-wrap; margin-top: 4px; }
+    .edit-form { width: 100%; background: #fafafa; padding: 8px; border-radius: 6px; }
+    .edit-form input, .edit-form select { width: 45%; }
+    .st-done { border-color: #2e9e4f; }
+    .st-postponed { border-color: #e6b800; }
+    .st-partial { border-color: #f08c00; }
+    .st-missed { border-color: #d63b3b; }
+    .st-upcoming { border-color: #999; }
+    .quote { font-style: italic; color: #555; }
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; text-align: center; }
+    .card .num { font-size: 28px; font-weight: bold; }
+    .card.late .num { color: #d63b3b; }
+    .bar { background: #ddd; border-radius: 10px; height: 18px; overflow: hidden; }
+    .barFill { background: #2e9e4f; height: 100%; width: 0%; transition: width 0.4s; }
+    .goal { background: #fff; border-radius: 10px; padding: 12px; margin: 8px 0; }
+    .habit { display: flex; align-items: center; gap: 8px; padding: 10px; margin: 6px 0;
+             border-radius: 8px; background: #fff; flex-wrap: wrap; }
+    .habit .info { flex: 1; min-width: 150px; }
+    .habit.checked { background: #e9f7ee; }
+    .streak { font-size: 14px; color: #d9730d; font-weight: bold; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+                  background: #fff; border-top: 1px solid #ddd; }
+    .bottom-nav button { flex: 1; margin: 0; padding: 12px 4px; border: none; background: #fff; font-size: 14px; }
+    .bottom-nav button.active { color: #2e6fd6; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h1>مساحتي</h1>
+
+  <div id="login">
+    <input id="email" type="email" placeholder="الإيميل">
+    <input id="password" type="password" placeholder="كلمة المرور">
+    <button id="loginBtn">دخول</button>
+    <button id="signupBtn">تسجيل جديد</button>
+  </div>
+
+  <div id="app" class="hidden">
+    <button id="logoutBtn">خروج</button>
+
+    <!-- الصفحة الرئيسية -->
+    <section id="page-home">
+      <h2 id="greeting"></h2>
+      <p id="quote" class="quote"></p>
+
+      <div class="cards">
+        <div class="card"><div class="num" id="cTotal">0</div>الإجمالي</div>
+        <div class="card"><div class="num" id="cDone">0</div>منجزة</div>
+        <div class="card"><div class="num" id="cLeft">0</div>متبقية</div>
+        <div class="card late"><div class="num" id="cLate">0</div>متأخرة</div>
+      </div>
+
+      <h3>تقدم اليوم</h3>
+      <div class="bar"><div id="todayFill" class="barFill"></div></div>
+      <p class="meta" id="barText"></p>
+
+      <h3>أهم مهام اليوم</h3>
+      <div id="todayList"></div>
+    </section>
+
+    <!-- صفحة المهام -->
+    <section id="page-tasks" class="hidden">
+      <h2>إضافة مهمة</h2>
+      <input id="taskTitle" placeholder="عنوان المهمة">
+      <select id="taskPriority">
+        <option value="urgent">عاجلة</option>
+        <option value="high">عالية</option>
+        <option value="normal" selected>متوسطة</option>
+        <option value="low">منخفضة</option>
+        <option value="none">غير مهمة</option>
+      </select>
+      <input id="taskDate" type="date">
+      <select id="taskGoal">
+        <option value="">بدون هدف</option>
+      </select>
+      <button id="addBtn">إضافة</button>
+
+      <h2>المهام</h2>
+      <label>ترتيب حسب:
+        <select id="sortBy">
+          <option value="date">الأقرب موعداً</option>
+          <option value="priority">الأهم</option>
+        </select>
+      </label>
+      <div id="list"></div>
+    </section>
+
+    <!-- صفحة الأهداف -->
+    <section id="page-goals" class="hidden">
+      <h2>إضافة هدف</h2>
+      <input id="goalTitle" placeholder="عنوان الهدف">
+      <select id="goalTerm">
+        <option value="daily">يومي</option>
+        <option value="weekly">أسبوعي</option>
+        <option value="monthly">شهري</option>
+        <option value="yearly">سنوي</option>
+      </select>
+      <button id="addGoalBtn">إضافة</button>
+
+      <h2>الأهداف</h2>
+      <div id="goalsList"></div>
+    </section>
+
+    <!-- صفحة العادات -->
+    <section id="page-habits" class="hidden">
+      <h2>إضافة عادة</h2>
+      <input id="habitTitle" placeholder="اسم العادة">
+      <select id="habitFreq">
+        <option value="daily">يومية</option>
+        <option value="weekly">أسبوعية</option>
+      </select>
+      <button id="addHabitBtn">إضافة</button>
+
+      <h2>العادات</h2>
+      <div id="habitsList"></div>
+    </section>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="home">الرئيسية</button>
+      <button class="nav-btn" data-page="tasks">المهام</button>
+      <button class="nav-btn" data-page="goals">الأهداف</button>
+      <button class="nav-btn" data-page="habits">العادات</button>
+    </nav>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
