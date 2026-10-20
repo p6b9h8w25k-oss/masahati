@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>مساحتي</title>
+
   <script>
     (function () {
       var saved = null;
@@ -29,12 +30,13 @@
 
   <style>
     @font-face { font-family: 'Boska'; src: url('fonts/Boska-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Boska'; src: url('fonts/Boska-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
-@font-face { font-family: 'Boska'; src: url('fonts/Boska-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'Thmanyah Sans'; src: url('fonts/thmanyahsans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Thmanyah Sans'; src: url('fonts/thmanyahsans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'Thmanyah Serif Display'; src: url('fonts/thmanyahserifdisplay-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Thmanyah Serif Display'; src: url('fonts/thmanyahserifdisplay-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Boska'; src: url('fonts/Boska-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+    @font-face { font-family: 'Boska'; src: url('fonts/Boska-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Thmanyah Sans'; src: url('fonts/thmanyahsans-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Thmanyah Sans'; src: url('fonts/thmanyahsans-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Thmanyah Serif Display'; src: url('fonts/thmanyahserifdisplay-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Thmanyah Serif Display'; src: url('fonts/thmanyahserifdisplay-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
     :root {
       --bg: #F7F5F0;
       --surface: #DCD8D0;
@@ -77,9 +79,10 @@
       transition: background 0.4s, color 0.4s;
     }
 
-    h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: 0.02em; }
+    h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; letter-spacing: 0.02em; }
     h2 { font-size: 26px; margin: 26px 0 10px; }
-    h3 { font-size: 20px; margin: 20px 0 8px; }
+    h3 { font-size: 20px; margin: 22px 0 8px; }
+    h4 { font-size: 18px; margin: 0 0 6px; }
 
     .box { max-width: 720px; margin: 0 auto; }
     .hidden { display: none !important; }
@@ -107,13 +110,13 @@
     button:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    #loginBtn, #addBtn, #addGoalBtn, #addHabitBtn,
+    #loginBtn, #addBtn, #addGoalBtn, #addHabitBtn, #addMoreBtn,
     .edit-form button:first-of-type {
       background: var(--accent);
       color: #fff;
       border-color: transparent;
     }
-    #loginBtn:hover, #addBtn:hover, #addGoalBtn:hover, #addHabitBtn:hover,
+    #loginBtn:hover, #addBtn:hover, #addGoalBtn:hover, #addHabitBtn:hover, #addMoreBtn:hover,
     .edit-form button:first-of-type:hover { opacity: 0.9; background: var(--accent); }
     #signupBtn { background: transparent; color: var(--secondary); border-color: var(--secondary); }
 
@@ -129,7 +132,7 @@
       color: var(--text);
     }
     input:focus, select:focus, textarea:focus { outline: 2px solid var(--secondary); outline-offset: 1px; }
-    textarea { width: 95%; min-height: 60px; }
+    textarea { width: 95%; min-height: 70px; }
 
     /* تسجيل الدخول */
     #login { max-width: 360px; margin: 30px auto; text-align: center; }
@@ -137,7 +140,7 @@
     #login button { width: 47%; margin-top: 8px; }
 
     /* البطاقات والقوائم */
-    .task, .habit, .goal, .card, .edit-form {
+    .task, .habit, .goal, .card, .edit-form, .day-block {
       background: var(--surface);
       border-radius: var(--radius);
       animation: rise 0.4s ease both;
@@ -159,18 +162,75 @@
     .edit-form { width: 100%; padding: 12px; }
     .edit-form input, .edit-form select { width: 45%; }
 
+    /* التبويبات والفلاتر */
+    .tabs { display: flex; gap: 8px; margin: 14px 0 4px; }
+    .tab { background: transparent; }
+    .tab.active { background: var(--secondary); color: #fff; border-color: transparent; }
+
+    .seg { display: inline-flex; flex-wrap: wrap; background: var(--surface); border-radius: 999px; padding: 4px; gap: 2px; }
+    .seg-btn, .kind-btn { border: none; background: transparent; padding: 6px 12px; color: var(--muted); font-size: 14px; }
+    .seg-btn.active, .kind-btn.active { background: var(--bg); color: var(--secondary); font-weight: 700; }
+
     .quote { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--muted); margin: 6px 0 16px; }
     #greeting { font-family: var(--serif); font-size: 34px; font-weight: 500; margin: 0; }
 
-    /* الصفحة الرئيسية */
+    /* مؤشرات الأداء */
     .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
     .card { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; }
-    .card .num { font-family: var(--serif); font-size: 42px; font-weight: 600; color: var(--text); line-height: 1.1; }
+    .card .num { font-family: var(--serif); font-size: 40px; font-weight: 600; color: var(--text); line-height: 1.1; }
     .card.late .num { color: var(--accent); }
 
     .bar { background: var(--surface-2); border-radius: 999px; height: 8px; overflow: hidden; }
     .barFill { background: var(--success); height: 100%; width: 0%; border-radius: 999px; transition: width 0.6s ease; }
 
+    /* حلقات التقدم */
+    .rings { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 12px; background: var(--surface); border-radius: var(--radius); padding: 18px 10px; margin: 12px 0; }
+    .ring { text-align: center; font-size: 14px; color: var(--muted); min-width: 110px; }
+    .ring svg { width: 110px; height: 110px; display: block; margin: 0 auto 6px; }
+    .ring-track { stroke: var(--surface-2); }
+    .ring-fill { stroke: var(--success); transition: stroke-dashoffset 0.8s ease; }
+    .ring-text { font-family: var(--serif); font-size: 26px; font-weight: 600; fill: var(--text); }
+
+    /* شريط الأسبوع */
+    .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 12px; }
+    .week .day { background: var(--surface); border-radius: 12px; padding: 10px 2px; text-align: center; font-size: 12px; color: var(--muted); border: 1px solid transparent; }
+    .week .day .dnum { font-family: var(--serif); font-size: 20px; color: var(--text); }
+    .week .day.today { border-color: var(--accent); }
+
+    /* الخريطة الحرارية */
+    .heat-head, .heat { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .heat-head { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 4px; }
+    .heat div { aspect-ratio: 1; border-radius: 8px; background: var(--surface-2); font-size: 12px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+    .heat .empty { background: transparent; }
+    .heat .lv1 { background: color-mix(in srgb, var(--success) 35%, var(--surface-2)); color: var(--text); }
+    .heat .lv2 { background: color-mix(in srgb, var(--success) 65%, var(--surface-2)); color: var(--text); }
+    .heat .lv3 { background: var(--success); color: #fff; }
+    .heat .today { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    /* التقويم */
+    .cal-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .cal-nav { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-size: 20px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .cal-head { font-size: 12px; color: var(--muted); text-align: center; padding: 4px 0; }
+    .cal-cell { min-height: 64px; background: var(--surface); border-radius: 10px; padding: 6px; font-size: 13px; cursor: pointer; border: 1px solid transparent; }
+    .cal-cell.other { opacity: 0.35; cursor: default; }
+    .cal-cell.today { border-color: var(--accent); }
+    .cal-cell .dn { font-family: var(--serif); font-size: 16px; }
+    .cal-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot.done { background: var(--success); }
+    .dot.late { background: var(--accent); }
+    .dot.pend { background: var(--secondary); }
+    .day-block { padding: 12px 14px; margin: 8px 0; }
+    .item-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .item-line:last-child { border-bottom: none; }
+
+    /* المزيد */
+    .more-form { background: var(--surface); border-radius: var(--radius); padding: 14px; margin: 10px 0; }
+    .more-form label { display: block; margin: 6px 0; font-size: 14px; }
+    .more-form label input, .more-form label select { margin: 0 6px; }
+
+    /* الأهداف */
     .goal { padding: 16px; margin: 10px 0; }
     .goal .bar { margin: 8px 0; }
 
@@ -185,7 +245,7 @@
     /* شريط التنقل: تحت على الجوال، جانبي على الكمبيوتر */
     .bottom-nav {
       position: fixed; bottom: 12px; left: 12px; right: 12px;
-      display: flex; padding: 6px; gap: 4px;
+      display: flex; padding: 6px; gap: 2px;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 999px;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
@@ -193,7 +253,7 @@
     }
     .bottom-nav button {
       flex: 1; border: none; background: transparent;
-      border-radius: 999px; padding: 10px 4px; font-size: 14px;
+      border-radius: 999px; padding: 10px 2px; font-size: 13px;
       color: var(--muted);
     }
     .bottom-nav button:hover { background: var(--surface-2); }
@@ -255,15 +315,26 @@
       <p id="quote" class="quote"></p>
 
       <div class="cards">
-        <div class="card"><div class="num" id="cTotal">0</div>الإجمالي</div>
-        <div class="card"><div class="num" id="cDone">0</div>منجزة</div>
-        <div class="card"><div class="num" id="cLeft">0</div>متبقية</div>
-        <div class="card late"><div class="num" id="cLate">0</div>متأخرة</div>
+        <div class="card late"><div class="num" id="kLate">0</div>متأخرة</div>
+        <div class="card"><div class="num" id="kWeek">0%</div>إنجاز الأسبوع</div>
+        <div class="card"><div class="num" id="kStreak">0</div>أطول سلسلة (يوم)</div>
+        <div class="card"><div class="num" id="kHabits">0/0</div>عادات اليوم</div>
       </div>
+
+      <h3>حلقات التقدم</h3>
+      <div id="rings" class="rings"></div>
 
       <h3>تقدم اليوم</h3>
       <div class="bar"><div id="todayFill" class="barFill"></div></div>
       <p class="meta" id="barText"></p>
+
+      <h3>هذا الأسبوع</h3>
+      <div id="week" class="week"></div>
+
+      <h3>نشاط الشهر</h3>
+      <div id="heatHead" class="heat-head"></div>
+      <div id="heat" class="heat"></div>
+      <p class="meta">كل ما كان اللون أغمق، زاد إنجازك في ذلك اليوم.</p>
 
       <h3>أهم مهام اليوم</h3>
       <div id="todayList"></div>
@@ -286,7 +357,11 @@
       </select>
       <button id="addBtn">إضافة</button>
 
-      <h2>المهام</h2>
+      <div class="tabs">
+        <button id="tabActive" class="tab active">المهام النشطة</button>
+        <button id="tabArchive" class="tab">الأرشيف</button>
+      </div>
+
       <label>ترتيب حسب:
         <select id="sortBy">
           <option value="date">الأقرب موعداً</option>
@@ -294,6 +369,41 @@
         </select>
       </label>
       <div id="list"></div>
+      <div id="archiveList" class="hidden"></div>
+    </section>
+
+    <!-- صفحة التقويم -->
+    <section id="page-calendar" class="hidden">
+      <div class="cal-top">
+        <div class="seg">
+          <button class="seg-btn active" data-view="month">شهر</button>
+          <button class="seg-btn" data-view="week">أسبوع</button>
+          <button class="seg-btn" data-view="day">يوم</button>
+        </div>
+        <div class="cal-nav">
+          <button id="calNext">التالي</button>
+          <span id="calTitle"></span>
+          <button id="calPrev">السابق</button>
+        </div>
+      </div>
+      <div id="calBody"></div>
+    </section>
+
+    <!-- صفحة المزيد: ملاحظات، إنجازات، أفكار، أشخاص، مالية، روابط، مهارات -->
+    <section id="page-more" class="hidden">
+      <div class="seg">
+        <button class="kind-btn active" data-kind="note">ملاحظات</button>
+        <button class="kind-btn" data-kind="achievement">إنجازات</button>
+        <button class="kind-btn" data-kind="idea">أفكار</button>
+        <button class="kind-btn" data-kind="person">أشخاص</button>
+        <button class="kind-btn" data-kind="expense">مالية</button>
+        <button class="kind-btn" data-kind="link">روابط</button>
+        <button class="kind-btn" data-kind="skill">مهارات</button>
+      </div>
+      <h2 id="moreTitle"></h2>
+      <div id="moreForm" class="more-form"></div>
+      <p id="moreSummary" class="meta"></p>
+      <div id="moreList"></div>
     </section>
 
     <!-- صفحة الأهداف -->
@@ -331,6 +441,8 @@
     <nav class="bottom-nav">
       <button class="nav-btn active" data-page="home">الرئيسية</button>
       <button class="nav-btn" data-page="tasks">المهام</button>
+      <button class="nav-btn" data-page="calendar">التقويم</button>
+      <button class="nav-btn" data-page="more">المزيد</button>
       <button class="nav-btn" data-page="goals">الأهداف</button>
       <button class="nav-btn" data-page="habits">العادات</button>
     </nav>
