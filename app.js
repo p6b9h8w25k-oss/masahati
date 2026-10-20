@@ -13,6 +13,7 @@ const STATUS_NAMES = {
   missed: 'لم تُنجز',
 };
 const TERM_NAMES = { daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', yearly: 'سنوي' };
+const DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const QUOTES = [
   'خطوة صغيرة اليوم أحسن من خطة كبيرة ما تبدأ.',
   'كل مهمة تنجزها تقربك من نسختك الأفضل.',
@@ -28,6 +29,7 @@ let habits = [];
 let habitLogs = [];
 let currentName = '';
 let editingId = null;
+let editingHabitId = null;
 
 function formatDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -39,8 +41,7 @@ function todayStr() {
 
 function addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, m - 1, d + n);
-  return formatDate(dt);
+  return formatDate(new Date(y, m - 1, d + n));
 }
 
 function effStatus(t) {
@@ -409,17 +410,53 @@ function renderGoals() {
 
 // ---------- العادات ----------
 
+// أداة اختيار الأيام (للإضافة والتعديل)
+function makeDaysPicker(selected = []) {
+  const wrap = document.createElement('div');
+  wrap.className = 'days';
+  const boxes = [];
+  DAY_NAMES.forEach((name, i) => {
+    const lab = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = selected.includes(i);
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(' ' + name));
+    wrap.appendChild(lab);
+    boxes.push({ cb, i });
+  });
+  return {
+    el: wrap,
+    values: () => boxes.filter(b => b.cb.checked).map(b => b.i),
+  };
+}
+
+let habitDaysPicker = makeDaysPicker();
+$('habitDaysAdd').appendChild(habitDaysPicker.el);
+$('habitFreq').onchange = () => {
+  $('habitDaysAdd').classList.toggle('hidden', $('habitFreq').value !== 'weekly');
+};
+
 $('addHabitBtn').onclick = async () => {
   const title = $('habitTitle').value.trim();
   if (!title) return alert('اكتب اسم العادة');
 
+  const freq = $('habitFreq').value;
   const { error } = await db.from('habits').insert({
     title,
-    frequency: $('habitFreq').value,
+    frequency: freq,
+    habit_time: $('habitTime').value || null,
+    weekdays: freq === 'weekly' ? habitDaysPicker.values() : null,
   });
   if (error) return alert(error.message);
 
   $('habitTitle').value = '';
+  $('habitTime').value = '';
+  $('habitFreq').value = 'daily';
+  $('habitDaysAdd').classList.add('hidden');
+  $('habitDaysAdd').innerHTML = '';
+  habitDaysPicker = makeDaysPicker();
+  $('habitDaysAdd').appendChild(habitDaysPicker.el);
   loadAll();
 };
 
@@ -428,6 +465,70 @@ async function deleteHabit(id) {
   const { error } = await db.from('habits').delete().eq('id', id);
   if (error) alert(error.message);
   loadAll();
+}
+
+async function saveHabitEdit(id, fields) {
+  const { error } = await db.from('habits').update(fields).eq('id', id);
+  if (error) return alert(error.message);
+  editingHabitId = null;
+  loadAll();
+}
+
+function cancelHabitEdit() {
+  editingHabitId = null;
+  renderHabits();
+}
+
+function buildHabitEdit(h) {
+  const form = document.createElement('div');
+  form.className = 'edit-form';
+
+  const title = document.createElement('input');
+  title.value = h.title;
+
+  const freq = document.createElement('select');
+  [['daily', 'يومية'], ['weekly', 'أسبوعية']].forEach(([v, label]) => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    if (v === h.frequency) opt.selected = true;
+    freq.appendChild(opt);
+  });
+
+  const time = document.createElement('input');
+  time.type = 'time';
+  time.value = h.habit_time || '';
+
+  const days = makeDaysPicker(h.weekdays || []);
+  days.el.classList.toggle('hidden', h.frequency !== 'weekly');
+  freq.onchange = () => days.el.classList.toggle('hidden', freq.value !== 'weekly');
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'حفظ';
+  saveBtn.onclick = () => {
+    const newTitle = title.value.trim();
+    if (!newTitle) return alert('اسم العادة ما يكون فاضي');
+    const f = freq.value;
+    saveHabitEdit(h.id, {
+      title: newTitle,
+      frequency: f,
+      habit_time: time.value || null,
+      weekdays: f === 'weekly' ? days.values() : null,
+    });
+  };
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'إلغاء';
+  cancelBtn.onclick = cancelHabitEdit;
+
+  form.appendChild(title);
+  form.appendChild(freq);
+  form.appendChild(time);
+  form.appendChild(days.el);
+  form.appendChild(document.createElement('br'));
+  form.appendChild(saveBtn);
+  form.appendChild(cancelBtn);
+  return form;
 }
 
 async function toggleHabitToday(habitId) {
@@ -443,7 +544,21 @@ async function toggleHabitToday(habitId) {
   loadAll();
 }
 
-// عدد الأيام المتتالية. إذا ما سجلت اليوم، العداد يبدأ من أمس عشان ما ينقطع قبل ما يخلص اليوم.
+// هل العادة مطلوبة اليوم؟
+function habitActiveToday(h) {
+  if (h.frequency !== 'weekly') return true;
+  if (!h.weekdays || h.weekdays.length === 0) return true;
+  return h.weekdays.includes(new Date().getDay());
+}
+
+// الأسبوع الحالي من الأحد للسبت
+function weekRange() {
+  const today = todayStr();
+  const sunday = addDays(today, -new Date().getDay());
+  return [sunday, addDays(sunday, 6)];
+}
+
+// عدد الأيام المتتالية للعادة اليومية
 function calcStreak(habitId) {
   const dates = new Set(habitLogs.filter(l => l.habit_id === habitId).map(l => l.log_date));
   const today = todayStr();
@@ -456,10 +571,10 @@ function calcStreak(habitId) {
   return count;
 }
 
-function countLastSevenDays(habitId) {
-  const today = todayStr();
-  const start = addDays(today, -6);
-  return habitLogs.filter(l => l.habit_id === habitId && l.log_date >= start && l.log_date <= today).length;
+function daysLabel(h) {
+  if (h.frequency !== 'weekly') return 'يومية';
+  if (!h.weekdays || h.weekdays.length === 0) return 'أسبوعية (أي يوم)';
+  return 'أسبوعية: ' + h.weekdays.map(i => DAY_NAMES[i]).join('، ');
 }
 
 function renderHabits() {
@@ -468,10 +583,16 @@ function renderHabits() {
   const today = todayStr();
 
   for (const h of habits) {
+    if (editingHabitId === h.id) {
+      box.appendChild(buildHabitEdit(h));
+      continue;
+    }
+
+    const active = habitActiveToday(h);
     const checked = habitLogs.some(l => l.habit_id === h.id && l.log_date === today);
 
     const div = document.createElement('div');
-    div.className = 'habit' + (checked ? ' checked' : '');
+    div.className = 'habit' + (checked ? ' checked' : '') + (active ? '' : ' inactive');
 
     const info = document.createElement('div');
     info.className = 'info';
@@ -479,14 +600,19 @@ function renderHabits() {
     title.textContent = h.title;
     const meta = document.createElement('div');
     meta.className = 'meta';
-    meta.textContent = h.frequency === 'weekly' ? 'أسبوعية' : 'يومية';
+    meta.textContent = daysLabel(h) + (h.habit_time ? ' | الساعة ' + h.habit_time : '');
     info.appendChild(title);
     info.appendChild(meta);
 
     const streakDiv = document.createElement('div');
     streakDiv.className = 'streak';
     if (h.frequency === 'weekly') {
-      streakDiv.textContent = 'أنجزتها ' + countLastSevenDays(h.id) + ' مرة هذا الأسبوع';
+      const [s, e] = weekRange();
+      const count = habitLogs.filter(l => l.habit_id === h.id && l.log_date >= s && l.log_date <= e).length;
+      const target = h.weekdays && h.weekdays.length ? h.weekdays.length : null;
+      streakDiv.textContent = target
+        ? 'أنجزتها ' + count + ' من ' + target + ' أيام هذا الأسبوع'
+        : 'أنجزتها ' + count + ' مرة هذا الأسبوع';
     } else {
       const s = calcStreak(h.id);
       streakDiv.textContent = s > 0 ? 'سلسلة: ' + s + ' يوم متتالي' : 'ابدأ السلسلة اليوم';
@@ -494,8 +620,20 @@ function renderHabits() {
     info.appendChild(streakDiv);
 
     const toggleBtn = document.createElement('button');
-    toggleBtn.textContent = checked ? 'إلغاء اليوم' : 'أنجزت اليوم';
-    toggleBtn.onclick = () => toggleHabitToday(h.id);
+    if (active) {
+      toggleBtn.textContent = checked ? 'إلغاء اليوم' : 'أنجزت اليوم';
+      toggleBtn.onclick = () => toggleHabitToday(h.id);
+    } else {
+      toggleBtn.textContent = 'ليس اليوم';
+      toggleBtn.disabled = true;
+    }
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'تعديل';
+    editBtn.onclick = () => {
+      editingHabitId = h.id;
+      renderHabits();
+    };
 
     const delBtn = document.createElement('button');
     delBtn.textContent = 'حذف';
@@ -503,6 +641,7 @@ function renderHabits() {
 
     div.appendChild(info);
     div.appendChild(toggleBtn);
+    div.appendChild(editBtn);
     div.appendChild(delBtn);
     box.appendChild(div);
   }

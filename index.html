@@ -4,47 +4,236 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>مساحتي</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('masahati-theme'); } catch (e) {}
+      var theme = saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('themeBtn');
+        function label() {
+          btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن';
+        }
+        label();
+        btn.onclick = function () {
+          var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem('masahati-theme', next); } catch (e) {}
+          label();
+        };
+      });
+    })();
+  </script>
+
   <style>
-    body { font-family: sans-serif; background: #f5f5f7; margin: 0; padding: 20px 20px 90px; color: #222; }
-    .box { max-width: 700px; margin: 0 auto; }
-    input, select, button, textarea { font-size: 16px; padding: 8px; margin: 4px; }
-    textarea { width: 95%; min-height: 60px; font-family: inherit; }
-    button { cursor: pointer; }
+    :root {
+      --bg: #F7F5F0;
+      --surface: #DCD8D0;
+      --surface-2: #E9E6DF;
+      --text: #292929;
+      --muted: #6E6A63;
+      --accent: #B33A46;
+      --secondary: #496A81;
+      --success: #6F8F68;
+      --gold: #A8854F;
+      --border: rgba(41, 41, 41, 0.12);
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Tajawal', system-ui, sans-serif;
+      --radius: 14px;
+      color-scheme: light;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #292929;
+      --surface: #353433;
+      --surface-2: #3E3D3B;
+      --text: #F7F5F0;
+      --muted: #B9B4AA;
+      --accent: #C9515D;
+      --secondary: #8AA7BC;
+      --success: #93B088;
+      --gold: #CDAA73;
+      --border: rgba(247, 245, 240, 0.1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px 16px 110px;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: 0.02em; }
+    h2 { font-size: 26px; margin: 26px 0 10px; }
+    h3 { font-size: 20px; margin: 20px 0 8px; }
+
+    .box { max-width: 720px; margin: 0 auto; }
     .hidden { display: none !important; }
-    .task { display: flex; align-items: center; gap: 8px; padding: 10px; margin: 6px 0;
-            border-radius: 8px; border-right: 6px solid #ccc; background: #fff; flex-wrap: wrap; }
-    .task .info { flex: 1; min-width: 150px; }
-    .meta { font-size: 13px; color: #666; }
-    .notes { font-size: 14px; color: #444; white-space: pre-wrap; margin-top: 4px; }
-    .edit-form { width: 100%; background: #fafafa; padding: 8px; border-radius: 6px; }
+
+    .top-row { display: flex; justify-content: flex-start; margin-bottom: 6px; }
+
+    .brand { text-align: center; padding: 8px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    .brand .eyebrow { font-size: 11px; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; }
+    .brand .name { font-family: var(--serif); font-size: 44px; letter-spacing: 0.18em; font-weight: 500; margin: 4px 0; }
+    .brand .ar { font-size: 22px; color: var(--muted); }
+
+    button {
+      font-family: var(--sans);
+      font-size: 15px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s, opacity 0.2s;
+    }
+    button:hover { background: var(--surface-2); }
+    button:active { transform: scale(0.97); }
+    button:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #loginBtn, #addBtn, #addGoalBtn, #addHabitBtn,
+    .edit-form button:first-of-type {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+    #loginBtn:hover, #addBtn:hover, #addGoalBtn:hover, #addHabitBtn:hover,
+    .edit-form button:first-of-type:hover { opacity: 0.9; background: var(--accent); }
+    #signupBtn { background: transparent; color: var(--secondary); border-color: var(--secondary); }
+
+    input, select, textarea {
+      font-family: var(--sans);
+      font-size: 16px;
+      padding: 10px 12px;
+      margin: 4px;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--secondary); outline-offset: 1px; }
+    textarea { width: 95%; min-height: 60px; }
+
+    /* تسجيل الدخول */
+    #login { max-width: 360px; margin: 30px auto; text-align: center; }
+    #login input { display: block; width: 100%; margin: 8px 0; }
+    #login button { width: 47%; margin-top: 8px; }
+
+    /* البطاقات والقوائم */
+    .task, .habit, .goal, .card, .edit-form {
+      background: var(--surface);
+      border-radius: var(--radius);
+      animation: rise 0.4s ease both;
+    }
+    .task {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; margin: 8px 0; flex-wrap: wrap;
+      border-right: 4px solid var(--border);
+    }
+    .task .info, .habit .info { flex: 1; min-width: 150px; }
+    .st-done { border-right-color: var(--success); }
+    .st-postponed { border-right-color: var(--muted); }
+    .st-partial { border-right-color: var(--gold); }
+    .st-missed { border-right-color: var(--accent); }
+    .st-upcoming { border-right-color: var(--secondary); }
+
+    .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .notes { font-size: 14px; white-space: pre-wrap; margin-top: 6px; opacity: 0.85; }
+    .edit-form { width: 100%; padding: 12px; }
     .edit-form input, .edit-form select { width: 45%; }
-    .st-done { border-color: #2e9e4f; }
-    .st-postponed { border-color: #e6b800; }
-    .st-partial { border-color: #f08c00; }
-    .st-missed { border-color: #d63b3b; }
-    .st-upcoming { border-color: #999; }
-    .quote { font-style: italic; color: #555; }
-    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0; }
-    .card { background: #fff; border-radius: 10px; padding: 14px; text-align: center; }
-    .card .num { font-size: 28px; font-weight: bold; }
-    .card.late .num { color: #d63b3b; }
-    .bar { background: #ddd; border-radius: 10px; height: 18px; overflow: hidden; }
-    .barFill { background: #2e9e4f; height: 100%; width: 0%; transition: width 0.4s; }
-    .goal { background: #fff; border-radius: 10px; padding: 12px; margin: 8px 0; }
-    .habit { display: flex; align-items: center; gap: 8px; padding: 10px; margin: 6px 0;
-             border-radius: 8px; background: #fff; flex-wrap: wrap; }
-    .habit .info { flex: 1; min-width: 150px; }
-    .habit.checked { background: #e9f7ee; }
-    .streak { font-size: 14px; color: #d9730d; font-weight: bold; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex;
-                  background: #fff; border-top: 1px solid #ddd; }
-    .bottom-nav button { flex: 1; margin: 0; padding: 12px 4px; border: none; background: #fff; font-size: 14px; }
-    .bottom-nav button.active { color: #2e6fd6; font-weight: bold; }
+
+    .quote { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--muted); margin: 6px 0 16px; }
+    #greeting { font-family: var(--serif); font-size: 34px; font-weight: 500; margin: 0; }
+
+    /* الصفحة الرئيسية */
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+    .card { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; }
+    .card .num { font-family: var(--serif); font-size: 42px; font-weight: 600; color: var(--text); line-height: 1.1; }
+    .card.late .num { color: var(--accent); }
+
+    .bar { background: var(--surface-2); border-radius: 999px; height: 8px; overflow: hidden; }
+    .barFill { background: var(--success); height: 100%; width: 0%; border-radius: 999px; transition: width 0.6s ease; }
+
+    .goal { padding: 16px; margin: 10px 0; }
+    .goal .bar { margin: 8px 0; }
+
+    /* العادات */
+    .habit { display: flex; align-items: center; gap: 10px; padding: 14px 16px; margin: 8px 0; flex-wrap: wrap; border-right: 4px solid var(--border); }
+    .habit.checked { border-right-color: var(--success); }
+    .habit.inactive { opacity: 0.55; }
+    .streak { font-size: 14px; color: var(--gold); font-weight: 700; margin-top: 4px; }
+    .days { margin: 6px 0; }
+    .days label { margin-left: 6px; font-size: 14px; white-space: nowrap; color: var(--text); }
+
+    /* شريط التنقل: تحت على الجوال، جانبي على الكمبيوتر */
+    .bottom-nav {
+      position: fixed; bottom: 12px; left: 12px; right: 12px;
+      display: flex; padding: 6px; gap: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+      z-index: 10;
+    }
+    .bottom-nav button {
+      flex: 1; border: none; background: transparent;
+      border-radius: 999px; padding: 10px 4px; font-size: 14px;
+      color: var(--muted);
+    }
+    .bottom-nav button:hover { background: var(--surface-2); }
+    .bottom-nav button.active { background: var(--bg); color: var(--secondary); font-weight: 700; }
+
+    @media (min-width: 700px) {
+      .cards { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    @media (min-width: 900px) {
+      body { padding: 32px 40px 32px 290px; }
+      .box { max-width: 880px; margin: 0 auto; }
+      .bottom-nav {
+        top: 0; bottom: 0; left: auto; right: 0; width: 240px;
+        flex-direction: column; justify-content: flex-start;
+        border-radius: 0; border: none; border-left: 1px solid var(--border);
+        box-shadow: none; padding: 28px 14px; gap: 6px;
+      }
+      .bottom-nav button { flex: none; text-align: right; padding: 12px 16px; font-size: 16px; border-radius: 10px; }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
 <div class="box">
-  <h1>مساحتي</h1>
+  <div class="top-row">
+    <button id="themeBtn" type="button">الوضع الداكن</button>
+  </div>
+
+  <header class="brand">
+    <div class="eyebrow">Private Space</div>
+    <div class="name">MASAHATI</div>
+    <div class="ar">مساحتي</div>
+  </header>
 
   <div id="login">
     <input id="email" type="email" placeholder="الإيميل">
@@ -54,7 +243,9 @@
   </div>
 
   <div id="app" class="hidden">
-    <button id="logoutBtn">خروج</button>
+    <div class="top-row">
+      <button id="logoutBtn">خروج</button>
+    </div>
 
     <!-- الصفحة الرئيسية -->
     <section id="page-home">
@@ -127,6 +318,8 @@
         <option value="daily">يومية</option>
         <option value="weekly">أسبوعية</option>
       </select>
+      <label>الوقت: <input id="habitTime" type="time"></label>
+      <div id="habitDaysAdd" class="hidden"></div>
       <button id="addHabitBtn">إضافة</button>
 
       <h2>العادات</h2>
