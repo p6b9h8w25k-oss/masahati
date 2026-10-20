@@ -110,13 +110,13 @@
     button:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    #loginBtn, #addBtn, #addGoalBtn, #addHabitBtn, #addMoreBtn,
+    #loginBtn, #addBtn, #addGoalBtn, #addHabitBtn, #addMoreBtn, #vaultAddBtn, #addSubjectBtn,
     .edit-form button:first-of-type {
       background: var(--accent);
       color: #fff;
       border-color: transparent;
     }
-    #loginBtn:hover, #addBtn:hover, #addGoalBtn:hover, #addHabitBtn:hover, #addMoreBtn:hover,
+    #loginBtn:hover, #addBtn:hover, #addGoalBtn:hover, #addHabitBtn:hover, #addMoreBtn:hover, #vaultAddBtn:hover, #addSubjectBtn:hover,
     .edit-form button:first-of-type:hover { opacity: 0.9; background: var(--accent); }
     #signupBtn { background: transparent; color: var(--secondary); border-color: var(--secondary); }
 
@@ -167,9 +167,13 @@
     .tab { background: transparent; }
     .tab.active { background: var(--secondary); color: #fff; border-color: transparent; }
 
-    .seg { display: inline-flex; flex-wrap: wrap; background: var(--surface); border-radius: 999px; padding: 4px; gap: 2px; }
-    .seg-btn, .kind-btn { border: none; background: transparent; padding: 6px 12px; color: var(--muted); font-size: 14px; }
-    .seg-btn.active, .kind-btn.active { background: var(--bg); color: var(--secondary); font-weight: 700; }
+    .seg { display: inline-flex; flex-wrap: wrap; background: var(--surface); border-radius: 999px; padding: 4px; gap: 2px; margin-bottom: 10px; }
+    .seg-btn, .gen-btn, .h-btn, .sub-btn, .area-btn {
+      border: none; background: transparent; padding: 6px 12px; color: var(--muted); font-size: 14px;
+    }
+    .seg-btn.active, .gen-btn.active, .h-btn.active, .sub-btn.active, .area-btn.active {
+      background: var(--bg); color: var(--secondary); font-weight: 700;
+    }
 
     .quote { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--muted); margin: 6px 0 16px; }
     #greeting { font-family: var(--serif); font-size: 34px; font-weight: 500; margin: 0; }
@@ -225,7 +229,7 @@
     .item-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
     .item-line:last-child { border-bottom: none; }
 
-    /* المزيد */
+    /* المزيد والنماذج */
     .more-form { background: var(--surface); border-radius: var(--radius); padding: 14px; margin: 10px 0; }
     .more-form label { display: block; margin: 6px 0; font-size: 14px; }
     .more-form label input, .more-form label select { margin: 0 6px; }
@@ -321,6 +325,10 @@
         <div class="card"><div class="num" id="kHabits">0/0</div>عادات اليوم</div>
       </div>
 
+      <h3>مستواك</h3>
+      <div class="meta" id="levelText"></div>
+      <div class="bar"><div id="levelFill" class="barFill"></div></div>
+
       <h3>حلقات التقدم</h3>
       <div id="rings" class="rings"></div>
 
@@ -338,6 +346,8 @@
 
       <h3>أهم مهام اليوم</h3>
       <div id="todayList"></div>
+            <div id="notifyBox"></div>
+      <div id="statsBox"></div>
     </section>
 
     <!-- صفحة المهام -->
@@ -389,21 +399,72 @@
       <div id="calBody"></div>
     </section>
 
-    <!-- صفحة المزيد: ملاحظات، إنجازات، أفكار، أشخاص، مالية، روابط، مهارات -->
+    <!-- صفحة المزيد: عام، الصحة، الدراسة، الخزنة -->
     <section id="page-more" class="hidden">
       <div class="seg">
-        <button class="kind-btn active" data-kind="note">ملاحظات</button>
-        <button class="kind-btn" data-kind="achievement">إنجازات</button>
-        <button class="kind-btn" data-kind="idea">أفكار</button>
-        <button class="kind-btn" data-kind="person">أشخاص</button>
-        <button class="kind-btn" data-kind="expense">مالية</button>
-        <button class="kind-btn" data-kind="link">روابط</button>
-        <button class="kind-btn" data-kind="skill">مهارات</button>
+        <button class="area-btn active" data-area="general">عام</button>
+        <button class="area-btn" data-area="health">الصحة</button>
+        <button class="area-btn" data-area="study">الدراسة</button>
+        <button class="area-btn" data-area="vault">الخزنة</button>
       </div>
-      <h2 id="moreTitle"></h2>
-      <div id="moreForm" class="more-form"></div>
-      <p id="moreSummary" class="meta"></p>
-      <div id="moreList"></div>
+
+      <!-- عام -->
+      <div id="areaGeneral">
+        <div class="seg">
+          <button class="gen-btn active" data-kind="note">ملاحظات</button>
+          <button class="gen-btn" data-kind="achievement">إنجازات</button>
+          <button class="gen-btn" data-kind="idea">أفكار</button>
+          <button class="gen-btn" data-kind="person">أشخاص</button>
+          <button class="gen-btn" data-kind="expense">مالية</button>
+          <button class="gen-btn" data-kind="link">روابط</button>
+          <button class="gen-btn" data-kind="skill">مهارات</button>
+        </div>
+        <h2 id="moreTitle"></h2>
+        <div id="moreForm" class="more-form"></div>
+        <p id="moreSummary" class="meta"></p>
+        <div id="moreList"></div>
+      </div>
+
+      <!-- الصحة -->
+      <div id="areaHealth" class="hidden">
+        <div class="top-row">
+          <button id="healthToggle" type="button">إخفاء القسم</button>
+        </div>
+        <div id="healthBody">
+          <div class="seg">
+            <button class="h-btn active" data-hk="sleep">النوم</button>
+            <button class="h-btn" data-hk="water">الماء</button>
+            <button class="h-btn" data-hk="weight">الوزن</button>
+            <button class="h-btn" data-hk="steps">الخطوات</button>
+            <button class="h-btn" data-hk="journal">يوميات</button>
+          </div>
+          <div id="healthForm" class="more-form"></div>
+          <div id="healthList"></div>
+        </div>
+      </div>
+
+      <!-- الدراسة -->
+      <div id="areaStudy" class="hidden">
+        <div id="subjectBar" class="seg"></div>
+        <div class="more-form">
+          <input id="subjectName" placeholder="اسم المادة الجديدة">
+          <button id="addSubjectBtn">إضافة مادة</button>
+        </div>
+        <div id="studyBody"></div>
+      </div>
+
+      <!-- الخزنة -->
+      <div id="areaVault" class="hidden">
+        <div class="more-form">
+          <input id="vaultTitle" placeholder="اسم الحساب أو الموقع">
+          <input id="vaultUser" placeholder="اسم المستخدم">
+          <input id="vaultPass" placeholder="كلمة المرور">
+          <textarea id="vaultNotes" placeholder="ملاحظات (اختياري)"></textarea>
+          <button id="vaultAddBtn">حفظ (يحتاج رمز)</button>
+        </div>
+        <p class="meta">اسم الحساب يظهر بدون تشفير، والباقي مشفر برمز تختاره. إذا نسيت الرمز ما تقدر ترجع البيانات.</p>
+        <div id="vaultList"></div>
+      </div>
     </section>
 
     <!-- صفحة الأهداف -->
@@ -451,5 +512,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
+<script src="app.js"></script>
+<script src="extra.js"></script>
 </body>
 </html>

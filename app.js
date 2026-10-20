@@ -23,7 +23,7 @@ const QUOTES = [
   'ابدأ بأهم شي، والباقي يجي بعده.',
 ];
 
-// أقسام "المزيد": كل قسم له حقول خاصة
+// أقسام "عام"
 const KINDS = {
   note: { label: 'ملاحظات', titleLabel: 'عنوان الملاحظة', bodyLabel: 'اكتب ملاحظتك', fields: [] },
   achievement: { label: 'إنجازات', titleLabel: 'الإنجاز', bodyLabel: 'وصف أو تفاصيل', fields: [
@@ -48,18 +48,52 @@ const KINDS = {
   skill: { label: 'مهارات', titleLabel: 'اسم المهارة', bodyLabel: 'وصف أو خطوات التعلم', fields: [] },
 };
 
+// أقسام الصحة
+const HEALTH = {
+  sleep: { label: 'نوم', fields: [
+    { key: 'bed', label: 'وقت النوم', type: 'time' },
+    { key: 'wake', label: 'وقت الاستيقاظ', type: 'time' },
+  ] },
+  water: { label: 'ماء', fields: [
+    { key: 'glasses', label: 'عدد الأكواب', type: 'number' },
+  ] },
+  weight: { label: 'وزن', fields: [
+    { key: 'kg', label: 'الوزن (كغ)', type: 'number' },
+  ] },
+  steps: { label: 'خطوات', fields: [
+    { key: 'count', label: 'عدد الخطوات', type: 'number' },
+  ] },
+  journal: { label: 'يوميات', fields: [], body: true },
+};
+
+// أنواع محتوى المادة الدراسية
+const STUDY_TYPES = [
+  ['homework', 'واجب'],
+  ['summary', 'ملخص'],
+  ['solution', 'حل'],
+  ['mistake', 'خطأ يحتاج مراجعة'],
+  ['exam', 'اختبار'],
+  ['requirement', 'مطلوب للمادة'],
+  ['link', 'رابط'],
+];
+
 const $ = id => document.getElementById(id);
 let tasks = [];
 let goals = [];
 let habits = [];
 let habitLogs = [];
 let items = [];
+let area = 'general';
 let moreKind = 'note';
+let healthKind = 'sleep';
+let selectedSubject = null;
 let currentName = '';
 let editingId = null;
 let editingHabitId = null;
 let calView = 'month';
 let calAnchor = todayStr();
+
+// ---------- أدوات التاريخ ----------
 
 function formatDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -92,6 +126,8 @@ function effStatus(t) {
   return t.status === 'pending' ? 'upcoming' : t.status;
 }
 
+// ---------- التنقل ----------
+
 function showScreen(loggedIn) {
   $('login').classList.toggle('hidden', loggedIn);
   $('app').classList.toggle('hidden', !loggedIn);
@@ -106,10 +142,20 @@ function showPage(name) {
   $('page-habits').classList.toggle('hidden', name !== 'habits');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === name));
   if (name === 'calendar') renderCalendar();
-  if (name === 'more') renderMore();
 }
 
 document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => showPage(b.dataset.page));
+
+function setArea(a) {
+  area = a;
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.toggle('active', b.dataset.area === a));
+  $('areaGeneral').classList.toggle('hidden', a !== 'general');
+  $('areaHealth').classList.toggle('hidden', a !== 'health');
+  $('areaStudy').classList.toggle('hidden', a !== 'study');
+  $('areaVault').classList.toggle('hidden', a !== 'vault');
+}
+
+document.querySelectorAll('.area-btn').forEach(b => b.onclick = () => setArea(b.dataset.area));
 
 async function init() {
   const { data } = await db.auth.getSession();
@@ -119,6 +165,8 @@ async function init() {
     loadAll();
   }
 }
+
+// ---------- الدخول والخروج ----------
 
 $('signupBtn').onclick = async () => {
   const { error } = await db.auth.signUp({
@@ -148,6 +196,8 @@ $('logoutBtn').onclick = async () => {
   items = [];
   showScreen(false);
 };
+
+// ---------- تحميل البيانات ----------
 
 async function loadAll() {
   const { data: { user } } = await db.auth.getUser();
@@ -181,6 +231,9 @@ async function loadAll() {
   renderHabits();
   renderCalendar();
   renderMore();
+  renderHealth();
+  renderStudy();
+  renderVault();
 }
 
 // ---------- المهام ----------
@@ -629,23 +682,26 @@ document.querySelectorAll('.seg-btn').forEach(b => {
   };
 });
 
-// ---------- المزيد: ملاحظات، إنجازات، أفكار، أشخاص، مالية، روابط، مهارات ----------
+// ---------- عام: ملاحظات، إنجازات، أفكار، أشخاص، مالية، روابط، مهارات ----------
 
-function buildMoreForm() {
-  const box = $('moreForm');
-  box.innerHTML = '';
-  const cfg = KINDS[moreKind];
-  $('moreTitle').textContent = cfg.label;
+// بناء نموذج الحقول (مشترك بين الأقسام)
+function buildFields(box, fields, titleLabel, bodyLabel) {
+  const inputs = {};
+  let title = null;
+  let body = null;
 
-  const title = document.createElement('input');
-  title.placeholder = cfg.titleLabel;
-  const body = document.createElement('textarea');
-  body.placeholder = cfg.bodyLabel;
-  box.appendChild(title);
-  box.appendChild(body);
+  if (titleLabel) {
+    title = document.createElement('input');
+    title.placeholder = titleLabel;
+    box.appendChild(title);
+  }
+  if (bodyLabel) {
+    body = document.createElement('textarea');
+    body.placeholder = bodyLabel;
+    box.appendChild(body);
+  }
 
-  const extras = {};
-  for (const f of cfg.fields) {
+  for (const f of fields) {
     const lab = document.createElement('label');
     lab.textContent = f.label + ': ';
     let el;
@@ -664,8 +720,33 @@ function buildMoreForm() {
     }
     lab.appendChild(el);
     box.appendChild(lab);
-    extras[f.key] = el;
+    inputs[f.key] = el;
   }
+
+  return { title, body, inputs };
+}
+
+function collectExtra(fields, inputs) {
+  const extra = {};
+  for (const f of fields) {
+    const v = String(inputs[f.key].value).trim();
+    if (v === '') continue;
+    extra[f.key] = f.type === 'number' ? Number(v) : v;
+  }
+  return extra;
+}
+
+function clearFields(fields, inputs) {
+  for (const f of fields) inputs[f.key].value = '';
+}
+
+function buildMoreForm() {
+  const box = $('moreForm');
+  box.innerHTML = '';
+  const cfg = KINDS[moreKind];
+  $('moreTitle').textContent = cfg.label;
+
+  const { title, body, inputs } = buildFields(box, cfg.fields, cfg.titleLabel, cfg.bodyLabel);
 
   const addBtn = document.createElement('button');
   addBtn.id = 'addMoreBtn';
@@ -674,24 +755,17 @@ function buildMoreForm() {
     const t = title.value.trim();
     if (!t) return alert('اكتب ' + cfg.titleLabel);
 
-    const extra = {};
-    for (const f of cfg.fields) {
-      const v = String(extras[f.key].value).trim();
-      if (v === '') continue;
-      extra[f.key] = f.type === 'number' ? Number(v) : v;
-    }
-
     const { error } = await db.from('items').insert({
       kind: moreKind,
       title: t,
       body: body.value.trim() || null,
-      extra,
+      extra: collectExtra(cfg.fields, inputs),
     });
     if (error) return alert(error.message);
 
     title.value = '';
     body.value = '';
-    for (const f of cfg.fields) extras[f.key].value = '';
+    clearFields(cfg.fields, inputs);
     loadAll();
   };
   box.appendChild(addBtn);
@@ -712,7 +786,7 @@ function moreMeta(it) {
 }
 
 function renderMore() {
-  document.querySelectorAll('.kind-btn').forEach(b => b.classList.toggle('active', b.dataset.kind === moreKind));
+  document.querySelectorAll('.gen-btn').forEach(b => b.classList.toggle('active', b.dataset.kind === moreKind));
   const list = $('moreList');
   list.innerHTML = '';
   const cfg = KINDS[moreKind];
@@ -768,13 +842,377 @@ async function deleteItem(id) {
   loadAll();
 }
 
-document.querySelectorAll('.kind-btn').forEach(b => {
+document.querySelectorAll('.gen-btn').forEach(b => {
   b.onclick = () => {
     moreKind = b.dataset.kind;
     buildMoreForm();
     renderMore();
   };
 });
+
+// ---------- الصحة ----------
+
+function healthOn() {
+  try { return localStorage.getItem('masahati-health') !== 'off'; } catch (e) { return true; }
+}
+
+function setHealthOn(on) {
+  try { localStorage.setItem('masahati-health', on ? 'on' : 'off'); } catch (e) {}
+  renderHealth();
+}
+
+$('healthToggle').onclick = () => setHealthOn(!healthOn());
+
+document.querySelectorAll('.h-btn').forEach(b => {
+  b.onclick = () => {
+    healthKind = b.dataset.hk;
+    buildHealthForm();
+    renderHealth();
+  };
+});
+
+function buildHealthForm() {
+  const box = $('healthForm');
+  box.innerHTML = '';
+  const cfg = HEALTH[healthKind];
+  const fields = [...cfg.fields, { key: 'date', label: 'التاريخ', type: 'date' }];
+  const { body, inputs } = buildFields(box, fields, null, cfg.body ? 'اكتب عن يومك...' : null);
+  inputs.date.value = todayStr();
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'حفظ';
+  saveBtn.onclick = async () => {
+    const extra = collectExtra(fields, inputs);
+    const date = extra.date || todayStr();
+    const text = body ? body.value.trim() : '';
+    if (cfg.body && !text) return alert('اكتب شي في اليوميات');
+
+    const { error } = await db.from('items').insert({
+      kind: 'h_' + healthKind,
+      title: cfg.label + ' ' + date,
+      body: text || null,
+      extra: { ...extra, date },
+    });
+    if (error) return alert(error.message);
+
+    clearFields(fields, inputs);
+    inputs.date.value = todayStr();
+    if (body) body.value = '';
+    loadAll();
+  };
+  box.appendChild(saveBtn);
+}
+
+function healthMeta(it) {
+  const e = it.extra || {};
+  if (healthKind === 'sleep') return 'من ' + (e.bed || '-') + ' إلى ' + (e.wake || '-');
+  if (healthKind === 'water') return (e.glasses !== undefined ? e.glasses : '-') + ' أكواب';
+  if (healthKind === 'weight') return (e.kg !== undefined ? e.kg : '-') + ' كغ';
+  if (healthKind === 'steps') return (e.count !== undefined ? e.count : '-') + ' خطوة';
+  return e.date || '';
+}
+
+function renderHealth() {
+  const on = healthOn();
+  $('healthToggle').textContent = on ? 'إخفاء القسم' : 'تشغيل القسم';
+  $('healthBody').classList.toggle('hidden', !on);
+  if (!on) return;
+
+  document.querySelectorAll('.h-btn').forEach(b => b.classList.toggle('active', b.dataset.hk === healthKind));
+
+  const list = $('healthList');
+  list.innerHTML = '';
+  const mine = items
+    .filter(i => i.kind === 'h_' + healthKind)
+    .sort((a, b) => ((b.extra && b.extra.date) || '').localeCompare((a.extra && a.extra.date) || ''))
+    .slice(0, 30);
+
+  for (const it of mine) {
+    const div = document.createElement('div');
+    div.className = 'task';
+    const info = document.createElement('div');
+    info.className = 'info';
+    const t = document.createElement('strong');
+    t.textContent = it.title;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = healthMeta(it);
+    info.appendChild(t);
+    info.appendChild(meta);
+    if (it.body) {
+      const n = document.createElement('div');
+      n.className = 'notes';
+      n.textContent = it.body;
+      info.appendChild(n);
+    }
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'حذف';
+    delBtn.onclick = () => deleteItem(it.id);
+    div.appendChild(info);
+    div.appendChild(delBtn);
+    list.appendChild(div);
+  }
+
+  if (mine.length === 0) list.textContent = 'ما عندك تسجيلات بعد.';
+}
+
+// ---------- الدراسة ----------
+
+function renderStudy() {
+  const subjects = items.filter(i => i.kind === 'subject');
+  if (!subjects.some(s => s.id === selectedSubject)) {
+    selectedSubject = subjects.length ? subjects[0].id : null;
+  }
+
+  const bar = $('subjectBar');
+  bar.innerHTML = '';
+  for (const s of subjects) {
+    const btn = document.createElement('button');
+    btn.className = 'sub-btn' + (s.id === selectedSubject ? ' active' : '');
+    btn.textContent = s.title;
+    btn.onclick = () => {
+      selectedSubject = s.id;
+      renderStudy();
+    };
+    bar.appendChild(btn);
+  }
+
+  const body = $('studyBody');
+  body.innerHTML = '';
+  if (!selectedSubject) {
+    body.textContent = 'أضف مادة أولاً.';
+    return;
+  }
+
+  const subj = subjects.find(s => s.id === selectedSubject);
+
+  const head = document.createElement('div');
+  head.className = 'top-row';
+  const h = document.createElement('h3');
+  h.textContent = subj.title;
+  h.style.flex = '1';
+  const delSubj = document.createElement('button');
+  delSubj.textContent = 'حذف المادة';
+  delSubj.onclick = () => deleteSubject(subj.id);
+  head.appendChild(h);
+  head.appendChild(delSubj);
+  body.appendChild(head);
+
+  // نموذج إضافة محتوى للمادة
+  const form = document.createElement('div');
+  form.className = 'more-form';
+  const typeSel = document.createElement('select');
+  STUDY_TYPES.forEach(([v, l]) => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = l;
+    typeSel.appendChild(o);
+  });
+  const title = document.createElement('input');
+  title.placeholder = 'العنوان';
+  const text = document.createElement('textarea');
+  text.placeholder = 'التفاصيل (اختياري)';
+  const addBtn = document.createElement('button');
+  addBtn.textContent = 'إضافة';
+  addBtn.id = 'addSubjectItemBtn';
+  addBtn.onclick = async () => {
+    const t = title.value.trim();
+    if (!t) return alert('اكتب العنوان');
+    const { error } = await db.from('items').insert({
+      kind: 'subject_item',
+      title: t,
+      body: text.value.trim() || null,
+      extra: { subject_id: subj.id, type: typeSel.value },
+    });
+    if (error) return alert(error.message);
+    loadAll();
+  };
+  form.appendChild(typeSel);
+  form.appendChild(title);
+  form.appendChild(text);
+  form.appendChild(addBtn);
+  body.appendChild(form);
+
+  // محتوى المادة مقسم حسب النوع
+  const list = items.filter(i => i.kind === 'subject_item' && i.extra && i.extra.subject_id === subj.id);
+  for (const [type, label] of STUDY_TYPES) {
+    const group = list.filter(i => i.extra.type === type);
+    if (group.length === 0) continue;
+    const gh = document.createElement('h4');
+    gh.textContent = label;
+    body.appendChild(gh);
+
+    for (const it of group) {
+      const div = document.createElement('div');
+      div.className = 'task';
+      const info = document.createElement('div');
+      info.className = 'info';
+      const t = document.createElement('strong');
+      t.textContent = it.title;
+      info.appendChild(t);
+      if (it.body) {
+        const n = document.createElement('div');
+        n.className = 'notes';
+        n.textContent = it.body;
+        info.appendChild(n);
+      }
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'حذف';
+      delBtn.onclick = () => deleteItem(it.id);
+      div.appendChild(info);
+      div.appendChild(delBtn);
+      body.appendChild(div);
+    }
+  }
+
+  if (list.length === 0) {
+    const p = document.createElement('div');
+    p.className = 'meta';
+    p.textContent = 'ما أضفت شي لهذي المادة بعد.';
+    body.appendChild(p);
+  }
+}
+
+$('addSubjectBtn').onclick = async () => {
+  const name = $('subjectName').value.trim();
+  if (!name) return alert('اكتب اسم المادة');
+  const { error } = await db.from('items').insert({ kind: 'subject', title: name, extra: {} });
+  if (error) return alert(error.message);
+  $('subjectName').value = '';
+  loadAll();
+};
+
+async function deleteSubject(id) {
+  if (!confirm('تبي تحذف هذي المادة وكل محتواها؟')) return;
+  const { error: e1 } = await db.from('items').delete().eq('extra->>subject_id', id);
+  if (e1) return alert(e1.message);
+  const { error: e2 } = await db.from('items').delete().eq('id', id);
+  if (e2) return alert(e2.message);
+  selectedSubject = null;
+  loadAll();
+}
+
+// ---------- الخزنة (مشفرة بالرمز) ----------
+
+function toB64(buf) {
+  let s = '';
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+function fromB64(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+}
+
+async function deriveKey(pin, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptText(pin, text) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(pin, salt);
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+  return { salt: toB64(salt), iv: toB64(iv), data: toB64(data) };
+}
+
+async function decryptText(pin, obj) {
+  const key = await deriveKey(pin, fromB64(obj.salt));
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(obj.iv) }, key, fromB64(obj.data));
+  return new TextDecoder().decode(plain);
+}
+
+$('vaultAddBtn').onclick = async () => {
+  const title = $('vaultTitle').value.trim();
+  if (!title) return alert('اكتب اسم الحساب أو الموقع');
+
+  const pin = prompt('اختر رمز الخزنة (4 أحرف على الأقل). لازم تحفظه، ما فيه طريقة ترجع البيانات بدونه.');
+  if (!pin || pin.length < 4) return alert('الرمز لازم يكون 4 أحرف على الأقل');
+  const pin2 = prompt('أعد كتابة الرمز');
+  if (pin !== pin2) return alert('الرمزين ما يتطابقون');
+
+  const secret = JSON.stringify({
+    user: $('vaultUser').value.trim(),
+    pass: $('vaultPass').value,
+    notes: $('vaultNotes').value.trim(),
+  });
+  const cipher = await encryptText(pin, secret);
+
+  const { error } = await db.from('items').insert({
+    kind: 'vault',
+    title,
+    body: JSON.stringify(cipher),
+    extra: {},
+  });
+  if (error) return alert(error.message);
+
+  $('vaultTitle').value = '';
+  $('vaultUser').value = '';
+  $('vaultPass').value = '';
+  $('vaultNotes').value = '';
+  loadAll();
+};
+
+async function revealVault(it, info, btn) {
+  const pin = prompt('أدخل رمز الخزنة');
+  if (!pin) return;
+  try {
+    const plain = JSON.parse(await decryptText(pin, JSON.parse(it.body)));
+    const d = document.createElement('div');
+    d.className = 'notes';
+    d.textContent =
+      'المستخدم: ' + (plain.user || '-') + '\n' +
+      'كلمة المرور: ' + (plain.pass || '-') +
+      (plain.notes ? '\nملاحظات: ' + plain.notes : '');
+    info.appendChild(d);
+    btn.disabled = true;
+  } catch (e) {
+    alert('الرمز غلط');
+  }
+}
+
+function renderVault() {
+  const list = $('vaultList');
+  list.innerHTML = '';
+  const mine = items.filter(i => i.kind === 'vault');
+
+  for (const it of mine) {
+    const div = document.createElement('div');
+    div.className = 'task';
+    const info = document.createElement('div');
+    info.className = 'info';
+    const t = document.createElement('strong');
+    t.textContent = it.title;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = 'محمي برمز';
+    info.appendChild(t);
+    info.appendChild(meta);
+
+    const showBtn = document.createElement('button');
+    showBtn.textContent = 'إظهار';
+    showBtn.onclick = () => revealVault(it, info, showBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'حذف';
+    delBtn.onclick = () => deleteItem(it.id);
+
+    div.appendChild(info);
+    div.appendChild(showBtn);
+    div.appendChild(delBtn);
+    list.appendChild(div);
+  }
+
+  if (mine.length === 0) list.textContent = 'الخزنة فاضية.';
+}
 
 // ---------- الأهداف ----------
 
@@ -1151,6 +1589,13 @@ function renderHome() {
   $('kStreak').textContent = longest;
   $('kHabits').textContent = doneHabits + '/' + activeHabits.length;
 
+  // النقاط: كل مهمة منجزة 10 نقاط، وكل عادة مسجلة 5 نقاط، والمستوى كل 100 نقطة
+  const doneTasksCount = tasks.filter(t => effStatus(t) === 'done').length;
+  const points = doneTasksCount * 10 + habitLogs.length * 5;
+  const level = Math.floor(points / 100) + 1;
+  $('levelText').textContent = 'المستوى ' + level + ' | ' + points + ' نقطة (باقي ' + (100 - points % 100) + ' للمستوى التالي)';
+  $('levelFill').style.width = (points % 100) + '%';
+
   // الحلقات الثلاث
   $('rings').innerHTML =
     ringHTML(pctOf(todayTasks), 'اليوم', countSub(todayTasks)) +
@@ -1239,4 +1684,5 @@ function renderHome() {
 }
 
 buildMoreForm();
+buildHealthForm();
 init();
